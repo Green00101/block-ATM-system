@@ -17,7 +17,7 @@ class ATM;
 class depositcard;
 class account{
 public:
-	account(string i, string n, string se, string a, string t, string s, string p, double m){
+	account(string i, string n, int h,string se, string a, string t, string s, string p,double m){
 		id = i;
 		name = n;
 		sex = se;
@@ -26,6 +26,7 @@ public:
 		shenfen = s;
 		password = p;
 		money = m;
+        Hash=h;
 	}
 	string getid(){
 		return id;
@@ -41,6 +42,7 @@ protected:
 	string password;
 	string sex;
 	double money;
+    int Hash;
 };
 
 class ATM{
@@ -49,6 +51,8 @@ public:
 	void enterdeposit();
 	void delaccount();
 	void exitatm();
+	bool passwordeq(int Hash, double money);
+	int passworda(double m);
 	void dsave();
 	void dread();
 	string inputpassword();
@@ -62,7 +66,7 @@ protected:
 class depositcard:public account, public ATM{
 public:
 	friend class ATM;
-	depositcard(string i, string n, string se, string a, string t, string s, string p, double m):account(i,n,se,a,t,s,p,m){}
+	depositcard(string i, string n, int h, string se, string a, string t, string s, string p,double m):account(i,n,h,se,a,t,s,p,m){}
 	void save();
 	void fetch();
 	string getp(){
@@ -83,18 +87,20 @@ void ATM::dsave(){
 		outfile << deposit[n] -> tele << "  ";
 		outfile << deposit[n] -> address << "  ";
 		outfile << deposit[n] -> sex << "  ";
+        outfile<<deposit[n]->Hash<<"  ";
 	}
 	outfile.close();
 }
 void ATM::dread(){
 	string id;
 	string sex;
-	string nam; 
+	string nam;
 	string passw;
 	string tele;
 	string adress;
 	string shenfen;
 	double money;
+    int Hash;
 	ifstream infile("deposit.txt", ios::in);
 	infile >> depositcount;
 	if(!infile){
@@ -110,7 +116,8 @@ void ATM::dread(){
 		infile >> tele;
 		infile >> adress;
 		infile >> sex;
-		depositcard * acc = new depositcard(id, nam, sex, adress, tele, shenfen, passw, money);
+        infile>>Hash;
+		depositcard * acc = new depositcard(id, nam, Hash,sex, adress, tele, shenfen, passw, money);
 		deposit[n] = acc;
 	}
 	infile.close();
@@ -201,6 +208,7 @@ void ATM::menu(){
 void ATM::setdeposit(){
 	srand((unsigned)time(NULL));
 	string i, n, a, t, s, se, p;
+	int h;
 	double m;
 	int find = 1;
 	cin.get();
@@ -254,6 +262,7 @@ void ATM::setdeposit(){
 		cin >> m;
 	}
 	cin.get();
+	h = passworda(m);
 	long long acc = account0 + random(1,100) + number;
 	number++;
 	cout << "success" << endl;
@@ -261,7 +270,7 @@ void ATM::setdeposit(){
 	stringstream str;
 	str << acc;
 	str >> i;
-	deposit[depositcount] = new depositcard(i,n,se,a,t,s,p,m);
+	deposit[depositcount] = new depositcard(i,n,h,se,a,t,s,p,m);
 	depositcount++;
 	dsave();
 	cout << "input key to continue" <<endl;
@@ -290,7 +299,7 @@ void ATM::enterdeposit(){
 		if(flag == 1){
 			cout << "wrong card number you still have " << x << "time" <<endl;
 			cin >> id;
-			x--;			
+			x--;
 		}
 		if(x == 0)
 			cout << "return last GUI" << endl;
@@ -300,7 +309,9 @@ void ATM::enterdeposit(){
 	while(1){
 		cout << "please input password" << endl;
 		p = inputpassword();
-		if(p != deposit[j] -> getp()){
+	//	cout << p << endl;
+	//	cout << deposit[j] -> passw;
+		if(p != deposit[i] -> getp()){
 			cout << endl << "wrong, you still have" << y << "time" << endl;
 			p = inputpassword();
 			y--;
@@ -331,18 +342,18 @@ void ATM::enterdeposit(){
 			}
 			switch(n){
 				case 1:
-					deposit[j] -> display();
+					deposit[i] -> display();
 					break;
 				case 2:
-					deposit[j] -> save();
+					deposit[i] -> save();
 					dsave();
 					break;
 				case 3:
-					deposit[j] -> fetch();
+					deposit[i] -> fetch();
 					dsave();
 					break;
 				case 4:
-					deposit[j] -> querymoney();
+					deposit[i] -> querymoney();
 					dsave();
 					break;
 				case 5:
@@ -352,6 +363,7 @@ void ATM::enterdeposit(){
 			}while(1);
 }
 void depositcard::save(){
+	if(passwordeq(Hash, money)){
 	cin.get();
 	system("cls");
 	double a;
@@ -363,8 +375,10 @@ void depositcard::save(){
 	}
 	cout << "success" << endl;
 	money += a;
+	Hash = passworda(money);
 	cout << "type ket to continue" << endl;
 	cin.get();
+	}
 }
 void account::querymoney(){
 	system("cls");
@@ -372,6 +386,7 @@ void account::querymoney(){
 	cin.get();
 }
 void depositcard::fetch(){
+	if(passwordeq(Hash, money)){
 	system("cls");
 	double a;
 	int b;
@@ -395,8 +410,10 @@ void depositcard::fetch(){
 			cin >> b;
 		}
 	}while(b == 0);
+	Hash = passworda(money);
 	cout << "input key to continue" << endl;
 	cin.get();
+}
 }
 void ATM::delaccount(){
 	int n;
@@ -424,7 +441,7 @@ void ATM::delaccount(){
 		}
 		while(1){
 			cout << "please input password" << endl;
-			p = inputpassword();
+			cout << deposit[j] -> getp() << endl;
 			if(p != deposit[j] -> getp()){
 				cout << "wrong" << endl;
 				p = inputpassword();
@@ -441,6 +458,23 @@ void ATM::delaccount(){
 		dsave();
 		cin.get();
 	}
+}
+int ATM :: passworda(double m){
+    int s;
+    s = m;
+    s = s ^ 1;
+    s = s << 2;
+    s = s ^ (1 << 2-1);
+    s = ~s;
+    return s;
+}
+bool ATM :: passwordeq(int Hash , double money){
+    int Ha1 = passworda(money);
+    if(Ha1==Hash) return true;
+    else{
+        exit(0);
+    }
+
 }
 int main(){
 	ATM atm;
